@@ -10,5 +10,7 @@ def read_symbol_check(symbol: str = ""):
     
     try:
         return check_symbol(symbol)
+    except ConnectionError as e:
+        raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
-        return HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Unexpected error")
