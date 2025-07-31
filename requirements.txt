@@ -1,2 +1,8 @@
 fastapi
 uvicorn[standard]
+yfinance
+numpy
+
+# Testing
+pytest
+httpx
