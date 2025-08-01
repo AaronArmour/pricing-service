@@ -1,8 +1,9 @@
 from fastapi import FastAPI
-from app.routes import check_symbol
+from app.routes import check_symbol, price
 
 app = FastAPI()
 app.include_router(check_symbol.router, prefix="/api")
+app.include_router(price.router, prefix="/api")
 
 @app.get("/")
 def read_root():
