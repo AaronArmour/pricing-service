@@ -69,4 +69,4 @@ def test_symbol_case_sensitivity():
         data_lower = response_lower.json()
         data_upper = response_upper.json()
         assert data_lower["symbol"] == data_upper["symbol"]
-        assert data_lower["current_price"] == data_upper["current_price"] 
+        assert data_lower["current_price"] == data_upper["current_price"]

@@ -15,4 +15,4 @@ def read_price(symbol: str = ""):
     except ConnectionError as e:
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Unexpected error") 
+        raise HTTPException(status_code=500, detail="Unexpected error")

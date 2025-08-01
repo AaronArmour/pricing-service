@@ -63,4 +63,4 @@ def get_current_price(symbol: str) -> Dict[str, Union[str, float]]:
         raise
     except Exception as e:
         # Catch any other unexpected errors and treat as invalid symbol
-        raise InvalidSymbolError(f"Error fetching price for symbol {symbol}: {str(e)}") from e 
+        raise InvalidSymbolError(f"Error fetching price for symbol {symbol}: {str(e)}") from e
