@@ -7,7 +7,7 @@ router = APIRouter()
 
 def validate_date_format(date_str: str) -> str:
     """
-    Validate date format YYYY-MM-DD.
+    Validate date format YYYY-MM-DD and ensure it's not in the future.
     
     Args:
         date_str (str): Date string to validate
@@ -16,17 +16,22 @@ def validate_date_format(date_str: str) -> str:
         str: Validated date string
         
     Raises:
-        HTTPException: If date format is invalid
+        InvalidDateError: If date format is invalid or date is in the future
     """
     # Check format with regex
     if not re.match(r'^\d{4}-\d{2}-\d{2}$', date_str):
-        raise HTTPException(status_code=400, detail=f"Invalid date format. Expected YYYY-MM-DD, got: {date_str}")
+        raise InvalidDateError(f"Invalid date format. Expected YYYY-MM-DD, got: {date_str}")
     
     # Validate date is actually valid
     try:
-        datetime.strptime(date_str, '%Y-%m-%d')
+        request_date = datetime.strptime(date_str, '%Y-%m-%d')
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=f"Invalid date: {date_str}. {str(e)}")
+        raise InvalidDateError(f"Invalid date: {date_str}. {str(e)}")
+    
+    # Check if date is in the future
+    today = datetime.now().date()
+    if request_date.date() > today:
+        raise InvalidDateError(f"Date cannot be in the future. Requested: {date_str}, Today: {today.strftime('%Y-%m-%d')}")
     
     return date_str
 
