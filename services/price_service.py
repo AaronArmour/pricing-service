@@ -1,11 +1,8 @@
 import yfinance as yf
 from requests.exceptions import RequestException
 from typing import Dict, Union
-
-
-class InvalidSymbolError(Exception):
-    """Raised when the provided ticker symbol is invalid or not found."""
-    pass
+from datetime import datetime, timedelta
+from utils.validation import validate_ticker_symbol, validate_date_format, InvalidSymbolError, InvalidDateError
 
 
 class NetworkError(Exception):
@@ -28,18 +25,11 @@ def get_current_price(symbol: str) -> Dict[str, Union[str, float]]:
         NetworkError: If there is a network error while fetching data
     """
     try:
-        # Create ticker object
-        ticker = yf.Ticker(symbol)
-        
-        # Get ticker info to validate symbol
-        info = ticker.info
-        
-        # Check if symbol exists and matches
-        if "symbol" not in info or info["symbol"] != symbol:
-            raise InvalidSymbolError(f"Invalid ticker symbol: {symbol}")
+        # Validate ticker symbol
+        ticker = validate_ticker_symbol(symbol)
         
         # Get current price using history method
-        history = ticker.history(period="1d")
+        history = ticker.history(period="1d", auto_adjust=False)
         
         # Check if we have valid price data
         if len(history) == 0:
@@ -64,3 +54,86 @@ def get_current_price(symbol: str) -> Dict[str, Union[str, float]]:
     except Exception as e:
         # Catch any other unexpected errors and treat as invalid symbol
         raise InvalidSymbolError(f"Error fetching price for symbol {symbol}: {str(e)}") from e
+
+
+def get_historical_price(symbol: str, date: str) -> Dict[str, Union[str, float]]:
+    """
+    Get the historical price of a given ticker symbol for a specific date.
+    If no price data is available for the exact date, returns the price from
+    the closest prior trading date.
+    
+    Args:
+        symbol (str): The ticker symbol to get the price for (e.g., 'AAPL', 'MSFT')
+        date (str): Date in YYYY-MM-DD format (e.g., '2024-01-15')
+        
+    Returns:
+        Dict[str, Union[str, float]]: Dictionary containing symbol, date, and historical price
+        
+    Raises:
+        InvalidSymbolError: If the symbol is invalid or not found
+        InvalidDateError: If the date format is invalid
+        NetworkError: If there is a network error while fetching data
+    """
+    try:
+        # Validate date format
+        validated_date = validate_date_format(date)
+        
+        # Validate ticker symbol
+        ticker = validate_ticker_symbol(symbol)
+        
+        # Get historical data for the specific date (end is not inclusive, so add 1 day)
+        from datetime import datetime, timedelta
+        request_date = datetime.strptime(validated_date, '%Y-%m-%d')
+        end_date = request_date + timedelta(days=1)
+        
+        history = ticker.history(start=validated_date, end=end_date.strftime('%Y-%m-%d'), auto_adjust=False)
+        
+        # If no data for exact date, try to get data from a wider range to find closest prior date
+        if len(history) == 0:
+            # Get data from 30 days before the requested date to find the closest prior trading date
+            from datetime import datetime, timedelta
+            request_date = datetime.strptime(validated_date, '%Y-%m-%d')
+            start_date = request_date - timedelta(days=30)
+            
+            # Get historical data for the wider range (end is not inclusive, so add 1 day)
+            history = ticker.history(start=start_date.strftime('%Y-%m-%d'), end=end_date.strftime('%Y-%m-%d'), auto_adjust=False)
+            
+            if len(history) == 0:
+                raise InvalidSymbolError(f"No price data available for symbol {symbol} on or before date {validated_date}")
+            
+            # Get the closest prior trading date
+            closest_date = history.index[-1].strftime('%Y-%m-%d')
+            historical_price = history["Close"].iloc[-1]
+            
+            # Validate that we have a valid numeric price
+            if historical_price is None or (hasattr(historical_price, 'isna') and historical_price.isna()):
+                raise InvalidSymbolError(f"No valid price data for symbol {symbol} on or before date {validated_date}")
+            
+            return {
+                "symbol": symbol,
+                "date": validated_date,
+                "actual_date": closest_date,
+                "historical_price": float(historical_price)
+            }
+        else:
+            # We have data for the exact date
+            historical_price = history["Close"].iloc[0]
+            
+            # Validate that we have a valid numeric price
+            if historical_price is None or (hasattr(historical_price, 'isna') and historical_price.isna()):
+                raise InvalidSymbolError(f"No valid price data for symbol {symbol} on date {validated_date}")
+            
+            return {
+                "symbol": symbol,
+                "date": validated_date,
+                "historical_price": float(historical_price)
+            }
+        
+    except RequestException as e:
+        raise ConnectionError("Network error while contacting price service") from e
+    except (InvalidSymbolError, InvalidDateError):
+        # Re-raise our custom exceptions
+        raise
+    except Exception as e:
+        # Catch any other unexpected errors and treat as invalid symbol
+        raise InvalidSymbolError(f"Error fetching historical price for symbol {symbol} on date {date}: {str(e)}") from e
