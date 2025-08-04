@@ -64,4 +64,4 @@ def validate_ticker_symbol(symbol: str) -> yf.Ticker:
     if "symbol" not in info or info["symbol"] != symbol:
         raise InvalidSymbolError(f"Invalid ticker symbol: {symbol}")
     
-    return ticker 
+    return ticker
