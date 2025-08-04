@@ -88,7 +88,7 @@ def get_current_price(symbol: str) -> Dict[str, Union[str, float]]:
         ticker = _validate_ticker_symbol(symbol)
         
         # Get current price using history method
-        history = ticker.history(period="1d")
+        history = ticker.history(period="1d", auto_adjust=False)
         
         # Check if we have valid price data
         if len(history) == 0:
@@ -145,7 +145,7 @@ def get_historical_price(symbol: str, date: str) -> Dict[str, Union[str, float]]
         request_date = datetime.strptime(validated_date, '%Y-%m-%d')
         end_date = request_date + timedelta(days=1)
         
-        history = ticker.history(start=validated_date, end=end_date.strftime('%Y-%m-%d'))
+        history = ticker.history(start=validated_date, end=end_date.strftime('%Y-%m-%d'), auto_adjust=False)
         
         # If no data for exact date, try to get data from a wider range to find closest prior date
         if len(history) == 0:
@@ -155,7 +155,7 @@ def get_historical_price(symbol: str, date: str) -> Dict[str, Union[str, float]]
             start_date = request_date - timedelta(days=30)
             
             # Get historical data for the wider range (end is not inclusive, so add 1 day)
-            history = ticker.history(start=start_date.strftime('%Y-%m-%d'), end=end_date.strftime('%Y-%m-%d'))
+            history = ticker.history(start=start_date.strftime('%Y-%m-%d'), end=end_date.strftime('%Y-%m-%d'), auto_adjust=False)
             
             if len(history) == 0:
                 raise InvalidSymbolError(f"No price data available for symbol {symbol} on or before date {validated_date}")
