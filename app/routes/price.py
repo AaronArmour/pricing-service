@@ -1,39 +1,8 @@
 from fastapi import APIRouter, HTTPException
-from services.price_service import get_current_price, get_historical_price, InvalidSymbolError, InvalidDateError
-import re
-from datetime import datetime
+from services.price_service import get_current_price, get_historical_price
+from utils.validation import validate_date_format, InvalidSymbolError, InvalidDateError
 
 router = APIRouter()
-
-def validate_date_format(date_str: str) -> str:
-    """
-    Validate date format YYYY-MM-DD and ensure it's not in the future.
-    
-    Args:
-        date_str (str): Date string to validate
-        
-    Returns:
-        str: Validated date string
-        
-    Raises:
-        InvalidDateError: If date format is invalid or date is in the future
-    """
-    # Check format with regex
-    if not re.match(r'^\d{4}-\d{2}-\d{2}$', date_str):
-        raise InvalidDateError(f"Invalid date format. Expected YYYY-MM-DD, got: {date_str}")
-    
-    # Validate date is actually valid
-    try:
-        request_date = datetime.strptime(date_str, '%Y-%m-%d')
-    except ValueError as e:
-        raise InvalidDateError(f"Invalid date: {date_str}. {str(e)}")
-    
-    # Check if date is in the future
-    today = datetime.now().date()
-    if request_date.date() > today:
-        raise InvalidDateError(f"Date cannot be in the future. Requested: {date_str}, Today: {today.strftime('%Y-%m-%d')}")
-    
-    return date_str
 
 @router.get("/price")
 def read_price(symbol: str = "", date: str = None):
