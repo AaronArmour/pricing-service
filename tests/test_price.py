@@ -1,8 +1,7 @@
 from fastapi.testclient import TestClient
 from app.main import app
-from unittest.mock import patch, Mock
+from unittest.mock import patch
 from requests.exceptions import RequestException
-from services.price_service import InvalidSymbolError
 
 client = TestClient(app)
 
